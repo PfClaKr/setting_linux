@@ -1,0 +1,72 @@
+# ychun.bash-theme -- the ychun zsh theme, ported to plain bash (no oh-my-zsh needed).
+#
+#   ╭─  user@host ~/dir ‹main*›                      127 ↵  [21:04:13]
+#   ╰─➤
+#
+# Source it from ~/.bashrc (install.sh does this):
+#   . ~/.config/setting_linux/ychun.bash-theme
+
+case $- in *i*) ;; *) return ;; esac   # interactive shells only
+
+# git: "‹branch› ", "‹branch*› " when the work tree has changes, nothing outside a repo.
+__ychun_git_info() {
+  local ref
+  ref=$(GIT_OPTIONAL_LOCKS=0 git symbolic-ref --short -q HEAD 2>/dev/null) ||
+    ref=$(GIT_OPTIONAL_LOCKS=0 git describe --tags --exact-match HEAD 2>/dev/null) ||
+    ref=$(GIT_OPTIONAL_LOCKS=0 git rev-parse --short HEAD 2>/dev/null) || return 0
+  local dirty=
+  if [ -n "$(GIT_OPTIONAL_LOCKS=0 git status --porcelain --ignore-submodules=dirty 2>/dev/null | head -n 1)" ]; then
+    dirty='*'
+  fi
+  printf '‹%s%s› ' "$ref" "$dirty"
+}
+
+# Runs before every prompt. It only sets variables: PS1 refers to them by name,
+# so text such as a branch name is never re-expanded as prompt code.
+__ychun_prompt() {
+  local ec=$?                                  # must stay the first command
+  __ychun_git=$(__ychun_git_info)
+
+  # bash has no right prompt (zsh's RPROMPT): draw "127 ↵  [time]" at the end
+  # of the first line instead, and leave it out when the line is too long.
+  local now code='' width
+  printf -v now '%(%H:%M:%S)T' -1
+  [ "$ec" -ne 0 ] && code="$ec ↵  "
+  width=$(( ${#code} + ${#now} + 2 ))
+  local dir=${PWD/#$HOME/\~}
+  local left=$(( 4 + ${#USER} + 1 + ${#HOSTNAME} + 1 + ${#dir} + 1 + ${#__ychun_git} ))
+  if [ $(( left + width + 2 )) -le "${COLUMNS:-80}" ]; then
+    __ychun_col=$(( ${COLUMNS:-80} - width + 1 ))
+    __ychun_right=$'\e[31m'"$code"$'\e[0m'"[$now]"
+  else
+    __ychun_col=1
+    __ychun_right=
+  fi
+  return "$ec"
+}
+
+__ychun_ps1() {
+  local r='\[\e[0m\]' red='\[\e[31m\]' cyan='\[\e[36m\]' yellow='\[\e[33m\]' blue='\[\e[1;34m\]'
+  local user='\u' host='\H' arrow='➤ '
+  if [ "${EUID:-$(id -u)}" -eq 0 ]; then
+    user="${red}\\u${r}"; arrow="${red}➤ ${r}"
+  fi
+  if [ -n "${SSH_CLIENT:-}${SSH2_CLIENT:-}${SSH_CONNECTION:-}" ]; then
+    host="${red}\\H${r}"
+  fi
+  local title=
+  case "$TERM" in xterm*|rxvt*|alacritty|foot*|tmux*|screen*) title='\[\e]0;\u@\h: \w\a\]' ;; esac
+  # Right part: save the cursor, jump to the column, print, restore. It is all
+  # inside \[ \], so readline counts it as zero width.
+  # shellcheck disable=SC2016  # expanded by bash when the prompt is drawn
+  local rprompt='\[\e7\e[${__ychun_col}G${__ychun_right}\e8\]'
+  PS1="${title}${rprompt}╭─  ${user}${cyan}@${r}${host} ${blue}\\w${r} ${yellow}\${__ychun_git}${r}\\n╰─${arrow}"
+}
+
+: "${USER:=$(id -un)}"
+shopt -s checkwinsize promptvars
+__ychun_ps1
+case ";${PROMPT_COMMAND:-};" in
+  *";__ychun_prompt;"*) ;;
+  *) PROMPT_COMMAND="__ychun_prompt${PROMPT_COMMAND:+;$PROMPT_COMMAND}" ;;
+esac
