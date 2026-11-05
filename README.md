@@ -42,7 +42,7 @@ again only refreshes the files; `~/.bashrc` never gets a second block. To undo, 
   branch with `*` when the tree is dirty, exit code and time on the right of the first line.
 - **`extras.bash`**: history settings (big, deduplicated, timestamped), `EDITOR=vim`, and the
   aliases `c` and `sysupdate`.
-- **`ychun.zsh-theme`**, **`.zshrc`**: the original zsh setup, based on oh-my-zsh's `bira` theme.
+- **`ychun.zsh-theme`**, **`.zshrc`**: the same prompt for zsh (needs oh-my-zsh; based on its `bira` theme).
 
 What each line does, and the checklist I go through on a fresh machine:
 <https://pfclakr.github.io/ko/posts/etc/setting-linux/> (also in
