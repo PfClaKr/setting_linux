@@ -10,7 +10,7 @@
 # Running it again is safe: ~/.bashrc only ever gets one block.
 set -euo pipefail
 
-RAW=https://raw.githubusercontent.com/PfClaKr/setting_linux/main
+RAW=${SETTING_LINUX_RAW:-https://raw.githubusercontent.com/PfClaKr/setting_linux/main}
 DEST=${XDG_CONFIG_HOME:-$HOME/.config}/setting_linux
 STAMP=$(date +%Y%m%d-%H%M%S)
 FILES=(vimrc ychun.bash-theme extras.bash ychun.zsh-theme)
