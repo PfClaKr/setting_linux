@@ -29,9 +29,9 @@ question; without a terminal to ask on, it sets up bash.
 |---|---|
 | bash | `ychun.bash-theme` and `extras.bash` in `~/.config/setting_linux/`, and [ble.sh](https://github.com/akinomyoga/ble.sh) in `~/.local/share/blesh/` for syntax highlighting and autosuggestions (accept one with `→` or `Ctrl-F`). Marked blocks at the top and end of `~/.bashrc` load them. |
 | zsh | zsh (apt), oh-my-zsh, `ychun.zsh-theme`, and the zsh-autosuggestions and zsh-syntax-highlighting plugins. `~/.zshrc` gets `ZSH_THEME="ychun"`, the two plugins, and a marked block that loads `extras.zsh`. |
-| both | `vimrc` as `~/.vimrc`, and the latest vimzip release in `~/vimzip` (its own `install.sh` puts it on `PATH`). |
+| both | `vimrc` as `~/.vimrc`, the latest vimzip release in `~/vimzip` (its own `install.sh` puts it on `PATH`), and Konsole (apt) when there is a desktop session. |
 
-Options: `--no-blesh`, `--no-vim`, `--no-vimzip`, `--no-chsh` (keep the current login shell).
+Options: `--no-blesh`, `--no-vim`, `--no-vimzip`, `--no-konsole`, `--no-chsh` (keep the current login shell).
 
 Files that already exist and differ are kept as `<file>.bak.<timestamp>`. Running the script
 again refreshes the files and rewrites the marked blocks in place, so they are never added twice;

@@ -9,6 +9,7 @@
 #
 #   --no-blesh   bash without ble.sh          --no-vim     skip ~/.vimrc
 #   --no-chsh    keep the current login shell --no-vimzip  skip vimzip
+#   --no-konsole skip installing Konsole
 #
 # Existing files are backed up as <file>.bak.<timestamp> before being replaced.
 # Running it again is safe: the marked blocks in ~/.bashrc and ~/.zshrc are rewritten, not added twice.
@@ -22,10 +23,10 @@ DATA=${XDG_DATA_HOME:-$HOME/.local/share}
 STAMP=$(date +%Y%m%d-%H%M%S)
 FILES=(vimrc ychun.bash-theme extras.bash ychun.zsh-theme extras.zsh)
 
-shell='' do_vim=1 do_vimzip=1 do_blesh=1 do_chsh=1
+shell='' do_vim=1 do_vimzip=1 do_blesh=1 do_chsh=1 do_konsole=1
 usage() {
-  sed -n '2,14s/^# \{0,1\}//p' "${BASH_SOURCE[0]:-/dev/null}" 2>/dev/null ||
-    echo "usage: install.sh [--shell bash|zsh] [--no-blesh] [--no-vim] [--no-vimzip] [--no-chsh]"
+  sed -n '2,15s/^# \{0,1\}//p' "${BASH_SOURCE[0]:-/dev/null}" 2>/dev/null ||
+    echo "usage: install.sh [--shell bash|zsh] [--no-blesh] [--no-vim] [--no-vimzip] [--no-konsole] [--no-chsh]"
   exit "${1:-0}"
 }
 while [ $# -gt 0 ]; do
@@ -37,6 +38,7 @@ while [ $# -gt 0 ]; do
     --no-vim) do_vim=0 ;;
     --no-vimzip) do_vimzip=0 ;;
     --no-chsh) do_chsh=0 ;;
+    --no-konsole) do_konsole=0 ;;
     -h|--help) usage 0 ;;
     *) echo "unknown option: $1" >&2; usage 1 ;;
   esac
@@ -89,6 +91,14 @@ as_root() {
   elif command -v sudo >/dev/null; then sudo "$@"
   else return 1
   fi
+}
+
+# apt_install PKG...: install with apt-get, refreshing the package lists once
+# if the first try fails (a fresh machine often has none yet).
+apt_install() {
+  command -v apt-get >/dev/null || return 1
+  as_root apt-get install -y "$@" ||
+    { as_root apt-get update && as_root apt-get install -y "$@"; }
 }
 
 # Where are the files? Next to this script in a clone, otherwise download them.
@@ -203,7 +213,7 @@ unset f
 setup_zsh() {
   if ! command -v zsh >/dev/null; then
     say "installing zsh"
-    if ! command -v apt-get >/dev/null || ! as_root apt-get install -y zsh; then
+    if ! apt_install zsh; then
       warn "could not install zsh: install it yourself and run this again"
       return 1
     fi
@@ -308,6 +318,18 @@ elif [ "$do_vim" = 1 ] && ! command -v vim >/dev/null; then
 fi
 
 "rc_$shell"
+
+# Konsole only makes sense with a desktop; on a server it would pull in KDE for nothing.
+if [ "$do_konsole" = 1 ]; then
+  if command -v konsole >/dev/null; then
+    say "Konsole is already installed"
+  elif [ -z "${DISPLAY:-}${WAYLAND_DISPLAY:-}${XDG_CURRENT_DESKTOP:-}" ]; then
+    say "no desktop session: skipped Konsole"
+  else
+    say "installing Konsole"
+    apt_install konsole || warn "could not install Konsole (sudo apt install konsole)"
+  fi
+fi
 
 [ "$do_chsh" = 1 ] && set_login_shell
 
