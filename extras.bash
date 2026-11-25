@@ -24,6 +24,9 @@ alias grep='grep --color=auto'
 # Colors are numbers (3, not yellow): ble.sh reads names as the bright variants.
 if [[ ${BLE_VERSION-} ]]; then
   bleopt exec_errexit_mark=
+  # Suggest from history only, like zsh-autosuggestions. By default ble.sh falls back to
+  # completion candidates (file and command names) when no history entry matches.
+  bleopt complete_auto_complete_opts=syntax-disabled
   # Commands green, keywords yellow, unknown commands red and bold, directories underlined.
   ble-face \
     command_file=fg=2 command_builtin=fg=2 command_builtin_dot=fg=2 \

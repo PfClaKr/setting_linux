@@ -8,24 +8,33 @@
 
 case $- in *i*) ;; *) return ;; esac   # interactive shells only
 
-# git: "‹branch› ", "‹branch*› " when the work tree has changes, nothing outside a repo.
+# git: sets __ychun_git to "‹branch› ", "‹branch*› " when the work tree has changes,
+# and to nothing outside a repo. It runs on every prompt, so it asks git once:
+# `status --porcelain=v2 --branch` gives the branch and the changes together.
 __ychun_git_info() {
-  local ref
-  ref=$(GIT_OPTIONAL_LOCKS=0 git symbolic-ref --short -q HEAD 2>/dev/null) ||
-    ref=$(GIT_OPTIONAL_LOCKS=0 git describe --tags --exact-match HEAD 2>/dev/null) ||
-    ref=$(GIT_OPTIONAL_LOCKS=0 git rev-parse --short HEAD 2>/dev/null) || return 0
-  local dirty=
-  if [ -n "$(GIT_OPTIONAL_LOCKS=0 git status --porcelain --ignore-submodules=dirty 2>/dev/null | head -n 1)" ]; then
-    dirty='*'
+  __ychun_git=
+  local out line ref='' oid='' dirty=''
+  out=$(GIT_OPTIONAL_LOCKS=0 git status --porcelain=v2 --branch --ignore-submodules=dirty 2>/dev/null) ||
+    return 0
+  while IFS= read -r line; do
+    case $line in
+      '# branch.head '*) ref=${line#'# branch.head '} ;;
+      '# branch.oid '*) oid=${line#'# branch.oid '} ;;
+      '#'*) ;;
+      *) dirty='*'; break ;;
+    esac
+  done <<<"$out"
+  if [ "$ref" = '(detached)' ]; then
+    ref=$(GIT_OPTIONAL_LOCKS=0 git describe --tags --exact-match HEAD 2>/dev/null) || ref=${oid:0:7}
   fi
-  printf '‹%s%s› ' "$ref" "$dirty"
+  __ychun_git="‹$ref$dirty› "
 }
 
 # Runs before every prompt. It only sets variables: PS1 refers to them by name,
 # so text such as a branch name is never re-expanded as prompt code.
 __ychun_prompt() {
   local ec=$?                                  # must stay the first command
-  __ychun_git=$(__ychun_git_info)
+  __ychun_git_info
 
   # bash has no right prompt (zsh's RPROMPT): draw "127 ↵  [time]" at the end
   # of the first line instead, and leave it out when the line is too long.
